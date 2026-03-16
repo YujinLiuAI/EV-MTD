@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="zh" data-lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>EV-MTD: Event-Frame Motion-aware Tracking & Detection Benchmark</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="EV-MTD: The first large-scale, high-resolution, pixel-aligned event-frame benchmark with motion states for object detection and tracking."
+  />
+  <style>
+    :root {
+      --bg: #070318;
+      --bg-soft: #120927;
+      --bg-softer: #1c1035;
+      --accent: #a855ff;
+      --accent-soft: rgba(168, 85, 255, 0.12);
+      --accent-strong: #c084fc;
+      --accent-alt: #6366f1;
+      --text: #f9fafb;
+      --text-soft: #cbd5f5;
+      --border-soft: rgba(148, 163, 184, 0.35);
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.65);
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-pill: 999px;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: radial-gradient(circle at top left, #1f0a3a 0, #050314 40%, #020010 100%);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: var(--accent-strong);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .page::before {
+      content: "";
+      position: fixed;
+      inset: -80px -40%;
+      background:
+        radial-gradient(circle at 10% -10%, rgba(236, 72, 153, 0.2), transparent 55%),
+        radial-gradient(circle at 90% 0%, rgba(129, 140, 248, 0.18), transparent 55%);
+      opacity: 0.9;
+      pointer-events: none;
+      z-index: -2;
+    }
+
+    /* Header */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(18px);
+      background: radial-gradient(circle at top left, rgba(88, 28, 135, 0.35), rgba(15, 23, 42, 0.96));
+      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 68px;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 12px;
+      background: conic-gradient(from 150deg, #a855ff, #6366f1, #ec4899, #a855ff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.45),
+        0 10px 30px rgba(15, 23, 42, 0.7);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand-logo::after {
+      content: "";
+      position: absolute;
+      width: 120%;
+      height: 120%;
+      background: radial-gradient(circle at 30% 0%, rgba(249, 250, 251, 0.45), transparent 55%);
+      mix-blend-mode: soft-light;
+      opacity: 0.9;
+    }
+
+    .brand-logo span {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0b0314;
+      letter-spacing: 0.8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand-text-main {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .brand-text-sub {
+      font-size: 12px;
+      color: var(--text-soft);
+      opacity: 0.85;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+    }
+
+    .nav-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      font-size: 14px;
+    }
+
+    .nav a {
+      color: var(--text-soft);
+      padding: 6px 0;
+      position: relative;
+      white-space: nowrap;
+    }
+
+    .nav a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -4px;
+      width: 0%;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(to right, var(--accent), var(--accent-alt));
+      transition: width 0.22s ease-out;
+    }
+
+    .nav a:hover::after {
+      width: 100%;
+    }
+
+    .nav-cta {
+      padding: 7px 14px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(129, 140, 248, 0.8);
+      background: radial-gradient(circle at top left, rgba(129, 140, 248, 0.28), rgba(15, 23, 42, 0.95));
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.9);
+      white-space: nowrap;
+    }
+
+    .nav-cta span:last-child {
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    /* Lang switch */
+    .lang-switch {
+      display: inline-flex;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148, 163, 184, 0.65);
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.8);
+      font-size: 11px;
+    }
+
+    .lang-btn {
+      padding: 4px 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-soft);
+      cursor: pointer;
+      min-width: 30px;
+      text-align: center;
+    }
+
+    .lang-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+      color: #020617;
+      font-weight: 600;
+    }
+
+    @media (max-width: 980px) {
+      .nav {
+        display: none;
+      }
+    }
+
+    /* Hero */
+    .hero {
+      padding: 52px 0 40px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2.7fr);
+      gap: 40px;
+      align-items: center;
+    }
+
+    @media (max-width: 880px) {
+      .hero-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 11px 4px 4px;
+      border-radius: var(--radius-pill);
+      background: radial-gradient(circle at 0 50%, rgba(236, 72, 153, 0.3), transparent 65%),
+        rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(248, 250, 252, 0.24);
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.8);
+      margin-bottom: 18px;
+    }
+
+    .hero-tag-pill {
+      padding: 4px 8px;
+      border-radius: var(--radius-pill);
+      background: rgba(248, 250, 252, 0.08);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .hero-tag-text {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .hero-title {
+      font-size: clamp(32px, 4vw, 42px);
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+
+    .hero-title span {
+      background: linear-gradient(to right, #c4b5fd, #e879f9, #a5b4fc);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 15px;
+      color: var(--text-soft);
+      max-width: 580px;
+      margin-bottom: 20px;
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .hero-badge {
+      padding: 4px 9px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      font-size: 11px;
+      color: var(--text-soft);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .btn-primary, .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      padding: 8px 16px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.14s ease-out, box-shadow 0.14s ease-out, background 0.14s ease-out;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.8);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+      color: #050316;
+      font-weight: 600;
+    }
+
+    .btn-primary span {
+      font-size: 16px;
+    }
+
+    .btn-ghost {
+      background: rgba(2, 6, 23, 0.8);
+      color: var(--text-soft);
+      border-color: rgba(148, 163, 184, 0.6);
+    }
+
+    .btn-primary:hover, .btn-ghost:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.95);
+      text-decoration: none;
+    }
+
+    .hero-note {
+      font-size: 11px;
+      color: var(--text-soft);
+      opacity: 0.9;
+    }
+
+    .hero-right {
+      position: relative;
+    }
+
+    .hero-card {
+      position: relative;
+      border-radius: 24px;
+      background: radial-gradient(circle at 10% 0, rgba(248, 250, 252, 0.08), transparent 65%),
+        linear-gradient(145deg, rgba(15, 23, 42, 0.97), rgba(24, 22, 38, 0.98));
+      padding: 18px 18px 16px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      overflow: hidden;
+    }
+
+    .hero-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .hero-card-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--text-soft);
+    }
+
+    .hero-card-chip {
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      color: var(--text-soft);
+    }
+
+    .hero-preview {
+      border-radius: 18px;
+      background: radial-gradient(circle at 0 0, rgba(147, 51, 234, 0.5), transparent 50%),
+        radial-gradient(circle at 100% 0, rgba(59, 130, 246, 0.4), transparent 52%),
+        radial-gradient(circle at 50% 110%, rgba(236, 72, 153, 0.55), transparent 60%);
+      border: 1px solid rgba(148, 163, 184, 0.55);
+      padding: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-preview-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1.1fr;
+      gap: 10px;
+    }
+
+    .preview-pane {
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.9);
+      padding: 7px 7px 6px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      position: relative;
+    }
+
+    .preview-pane-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-soft);
+      margin-bottom: 4px;
+      opacity: 0.9;
+    }
+
+    .preview-pane-img {
+      height: 130px;
+      border-radius: 8px;
+      background: radial-gradient(circle at 15% 0, #f97316, transparent 50%),
+        radial-gradient(circle at 85% 0, #22d3ee, transparent 48%),
+        radial-gradient(circle at 50% 90%, #8b5cf6, transparent 60%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preview-pane-img::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(15, 23, 42, 0.4) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(15, 23, 42, 0.4) 1px, transparent 1px);
+      background-size: 14px 14px;
+      mix-blend-mode: soft-light;
+      opacity: 0.9;
+    }
+
+    .preview-box {
+      position: absolute;
+      inset: 16px 16px 20px 16px;
+      border-radius: 10px;
+      box-shadow: 0 0 0 2px rgba(248, 250, 252, 0.8),
+        0 0 0 5px rgba(234, 179, 8, 0.45);
+    }
+
+    .preview-box-alt {
+      box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.9),
+        0 0 0 5px rgba(129, 140, 248, 0.5);
+    }
+
+    .preview-legend {
+      position: absolute;
+      bottom: 6px;
+      left: 8px;
+      font-size: 9px;
+      color: #e5e7eb;
+      text-shadow: 0 1px 2px rgba(15, 23, 42, 0.7);
+    }
+
+    .hero-preview-legend {
+      margin-top: 8px;
+      font-size: 10px;
+      color: var(--text-soft);
+      opacity: 0.9;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+      font-size: 10px;
+      color: var(--text-soft);
+      opacity: 0.9;
+    }
+
+    .hero-meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      background: rgba(2, 6, 23, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.7);
+    }
+
+    /* Sections */
+    section {
+      padding: 26px 0 10px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .section-title span {
+      color: var(--accent-strong);
+    }
+
+    .section-subtitle {
+      font-size: 14px;
+      color: var(--text-soft);
+      max-width: 640px;
+      margin-bottom: 18px;
+    }
+
+    .pill-divider {
+      width: 46px;
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(to right, var(--accent), var(--accent-alt));
+      margin-bottom: 12px;
+    }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 10px;
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 940px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 600px) {
+      .stats-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .stat-card {
+      border-radius: var(--radius-lg);
+      background: radial-gradient(circle at 0 0, rgba(129, 140, 248, 0.3), transparent 70%),
+        rgba(10, 15, 40, 0.95);
+      border: 1px solid var(--border-soft);
+      padding: 10px 12px 10px;
+      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.85);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-soft);
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 1px;
+    }
+
+    .stat-note {
+      font-size: 11px;
+      color: var(--text-soft);
+      opacity: 0.85;
+    }
+
+    /* Split layouts */
+    .split-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr);
+      gap: 26px;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 880px) {
+      .split-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card {
+      border-radius: var(--radius-lg);
+      background: radial-gradient(circle at 0 0, rgba(129, 140, 248, 0.25), transparent 60%),
+        rgba(10, 14, 38, 0.97);
+      border: 1px solid var(--border-soft);
+      padding: 14px 16px 14px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .card-tag {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--text-soft);
+    }
+
+    .card-body {
+      font-size: 13px;
+      color: var(--text-soft);
+    }
+
+    .list {
+      margin-top: 6px;
+      padding-left: 16px;
+    }
+
+    .list li {
+      margin-bottom: 4px;
+    }
+
+    .table-wrapper {
+      margin-top: 8px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(2, 6, 23, 0.95);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th, td {
+      padding: 7px 8px;
+      text-align: left;
+      border-bottom: 1px solid rgba(30, 41, 59, 0.9);
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.95);
+      font-weight: 500;
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 11px;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:nth-child(even) td {
+      background: rgba(15, 23, 42, 0.85);
+    }
+
+    /* Download */
+    .downloads-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 880px) {
+      .downloads-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .download-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .download-item {
+      border-radius: var(--radius-md);
+      background: rgba(2, 6, 23, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.65);
+      padding: 9px 10px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .download-item-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .download-label {
+      font-weight: 500;
+    }
+
+    .download-meta {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .download-badge {
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      background: linear-gradient(135deg, var(--accent), var(--accent-alt));
+      color: #020617;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .code-block {
+      margin-top: 6px;
+      border-radius: var(--radius-md);
+      background: #020617;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      padding: 8px 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      color: #e5e7eb;
+      overflow-x: auto;
+    }
+
+    /* Gallery */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 980px) {
+      .gallery-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .gallery-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .gallery-item {
+      border-radius: var(--radius-lg);
+      background: radial-gradient(circle at 0 0, rgba(129, 140, 248, 0.25), transparent 60%),
+        rgba(10, 14, 38, 0.97);
+      border: 1px solid var(--border-soft);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .gallery-img-wrapper {
+      position: relative;
+      padding-top: 60%;
+      background: radial-gradient(circle at 10% 0, rgba(236, 72, 153, 0.35), transparent 60%),
+        radial-gradient(circle at 100% 0, rgba(129, 140, 248, 0.4), transparent 55%);
+    }
+
+    .gallery-img-wrapper img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .gallery-caption {
+      padding: 10px 12px 9px;
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .gallery-caption-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      color: var(--text);
+    }
+
+    /* Citation & Footer */
+    .citation-card {
+      margin-top: 8px;
+    }
+
+    .footer {
+      margin-top: 26px;
+      padding: 18px 0 22px;
+      border-top: 1px solid rgba(148, 163, 184, 0.35);
+      font-size: 11px;
+      color: var(--text-soft);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .badge-soft {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: var(--radius-pill);
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    /* Language visibility */
+    [data-lang="zh"] .lang-en {
+      display: none !important;
+    }
+    [data-lang="en"] .lang-zh {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- Header -->
+    <header class="site-header">
+      <div class="container header-inner">
+        <div class="brand">
+          <div class="brand-logo">
+            <span>E</span>
+          </div>
+          <div>
+            <div class="brand-text-main">EV‑MTD</div>
+            <div class="brand-text-sub">Event‑Frame Motion Benchmark</div>
+          </div>
+        </div>
+        <div class="nav-wrapper">
+          <nav class="nav">
+            <a href="#overview"><span class="lang-zh">概览</span><span class="lang-en">Overview</span></a>
+            <a href="#dataset"><span class="lang-zh">数据集</span><span class="lang-en">Dataset</span></a>
+            <a href="#motion"><span class="lang-zh">运动状态</span><span class="lang-en">Motion</span></a>
+            <a href="#gallery"><span class="lang-zh">案例</span><span class="lang-en">Gallery</span></a>
+            <a href="#download"><span class="lang-zh">下载</span><span class="lang-en">Download</span></a>
+            <a href="#benchmark"><span class="lang-zh">基准任务</span><span class="lang-en">Benchmark</span></a>
+            <a href="#citation"><span class="lang-zh">引用</span><span class="lang-en">Citation</span></a>
+            <a href="docs/index.html" target="_blank" rel="noreferrer">
+              <span class="lang-zh">Docs</span><span class="lang-en">Docs</span>
+            </a>
+            <a class="nav-cta" href="#download">
+              <span class="lang-zh">获取数据集</span>
+              <span class="lang-en">Get Dataset</span>
+              <span>v1.0</span>
+            </a>
+          </nav>
+          <div class="lang-switch">
+            <button class="lang-btn active" data-lang-switch="zh">ZH</button>
+            <button class="lang-btn" data-lang-switch="en">EN</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <!-- Hero -->
+      <section class="hero" id="overview">
+        <div class="hero-grid">
+          <div>
+            <div class="hero-tag">
+              <span class="hero-tag-pill">New Benchmark</span>
+              <span class="hero-tag-text lang-zh">
+                首个像素级对齐、带运动状态的事件‑帧检测跟踪基准
+              </span>
+              <span class="hero-tag-text lang-en">
+                First pixel-aligned event-frame detection & tracking benchmark with motion states
+              </span>
+            </div>
+
+            <h1 class="hero-title">
+              <span>EV‑MTD</span>:
+              <span class="lang-zh">运动感知事件‑帧检测与跟踪基准</span>
+              <span class="lang-en">A Motion-aware Event‑Frame Detection & Tracking Benchmark</span>
+            </h1>
+
+            <p class="hero-subtitle lang-zh">
+              EV‑MTD 是首个 <strong>大规模、高分辨率、像素级对齐</strong>，并同时提供
+              <strong>运动状态标签</strong> 的事件‑帧目标检测与跟踪基准。
+              它系统性地刻画物体在多种运动模式（静止、匀速、加减速、机动转向等）下的跨模态特性，
+              为鲁棒视觉感知和跨模态融合算法提供统一评测平台。
+            </p>
+            <p class="hero-subtitle lang-en">
+              EV‑MTD is the first <strong>large-scale, high-resolution, pixel-aligned</strong> event‑frame benchmark
+              with <strong>per-object motion state labels</strong> for detection and tracking.
+              It systematically characterizes cross-modal behavior under diverse motion patterns
+              (static, cruising, acceleration, braking, maneuvering), providing a unified benchmark for
+              robust perception and multimodal fusion.
+            </p>
+
+            <div class="hero-badges">
+              <div class="hero-badge lang-zh">高分辨率 Event‑RGB</div>
+              <div class="hero-badge lang-en">High‑resolution Event‑RGB</div>
+              <div class="hero-badge lang-zh">像素级对齐双流</div>
+              <div class="hero-badge lang-en">Pixel‑aligned Dual‑stream</div>
+              <div class="hero-badge lang-zh">目标级运动状态</div>
+              <div class="hero-badge lang-en">Per‑object Motion States</div>
+              <div class="hero-badge lang-zh">检测 + 多目标跟踪</div>
+              <div class="hero-badge lang-en">Detection & Multi‑Object Tracking</div>
+            </div>
+
+            <div class="hero-actions">
+              <!-- TODO: 替换为真实下载链接 -->
+              <a class="btn-primary" href="#download">
+                <span>⬇</span>
+                <span class="lang-zh">下载 EV‑MTD v1.0</span>
+                <span class="lang-en">Download EV‑MTD v1.0</span>
+              </a>
+              <!-- TODO: 替换为真实 GitHub 仓库地址 -->
+              <a class="btn-ghost" href="https://github.com/your-name/ev-mtd" target="_blank" rel="noreferrer">
+                <span class="lang-zh">GitHub &amp; 工具 →</span>
+                <span class="lang-en">GitHub &amp; Tools →</span>
+              </a>
+            </div>
+
+            <div class="hero-note">
+              <span class="lang-zh">
+                设计参考了
+                <a href="https://chenshihfang.github.io/GOT-EDIT/" target="_blank" rel="noreferrer">GOT‑Edit</a>、
+                <a href="https://echosliu.github.io/PEOD-dataset/" target="_blank" rel="noreferrer">PEOD</a> 和
+                <a href="https://dsec.ifi.uzh.ch/" target="_blank" rel="noreferrer">DSEC</a> 等数据集项目页。
+              </span>
+              <span class="lang-en">
+                Design is inspired by dataset pages such as
+                <a href="https://chenshihfang.github.io/GOT-EDIT/" target="_blank" rel="noreferrer">GOT‑Edit</a>,
+                <a href="https://echosliu.github.io/PEOD-dataset/" target="_blank" rel="noreferrer">PEOD</a>, and
+                <a href="https://dsec.ifi.uzh.ch/" target="_blank" rel="noreferrer">DSEC</a>.
+              </span>
+            </div>
+          </div>
+
+          <!-- Right preview card -->
+          <div class="hero-right">
+            <div class="hero-card">
+              <div class="hero-card-header">
+                <div class="hero-card-label">Event‑Frame Visualization</div>
+                <div class="hero-card-chip">
+                  <span class="lang-zh">运动感知轨迹</span>
+                  <span class="lang-en">Motion‑aware Tracks</span>
+                </div>
+              </div>
+              <div class="hero-preview">
+                <div class="hero-preview-grid">
+                  <div class="preview-pane">
+                    <div class="preview-pane-title">Event Stream</div>
+                    <div class="preview-pane-img">
+                      <div class="preview-box"></div>
+                      <div class="preview-legend">
+                        <span class="lang-zh">正负极事件云与目标轮廓</span>
+                        <span class="lang-en">events ± polarity, object contours</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="preview-pane">
+                    <div class="preview-pane-title">RGB Frame</div>
+                    <div class="preview-pane-img">
+                      <div class="preview-box preview-box-alt"></div>
+                      <div class="preview-legend">
+                        <span class="lang-zh">对齐检测框与运动状态</span>
+                        <span class="lang-en">aligned boxes & motion states</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="hero-preview-legend">
+                  <span class="lang-zh">
+                    事件云与 RGB 帧在空间与时间上<strong>精确对齐</strong>，并提供每个目标的检测框与离散运动状态标注。
+                  </span>
+                  <span class="lang-en">
+                    Event clouds and RGB frames are <strong>precisely aligned</strong> in space and time,
+                    with bounding boxes and discrete motion state annotations for each object.
+                  </span>
+                </div>
+              </div>
+              <div class="hero-meta">
+                <div class="hero-meta-item">
+                  1280×720 event · 30 Hz RGB
+                </div>
+                <div class="hero-meta-item">
+                  300k+ boxes · 50k+ tracks
+                </div>
+                <div class="hero-meta-item lang-zh">
+                  5 种运动状态（静止、巡航、加速、减速、机动）
+                </div>
+                <div class="hero-meta-item lang-en">
+                  5 motion states (static, cruise, accel, brake, maneuver)
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Key stats -->
+      <section>
+        <div class="pill-divider"></div>
+        <h2 class="section-title">
+          <span>EV‑MTD</span>
+          <span class="lang-zh">一览</span>
+          <span class="lang-en">at a Glance</span>
+        </h2>
+        <p class="section-subtitle lang-zh">
+          我们专注于<strong>事件‑帧跨模态融合</strong>与<strong>运动状态感知</strong>：
+          所有样本均提供时间同步、像素级对齐的 Event‑RGB 数据、目标检测框和目标级时序轨迹，
+          并为每条轨迹赋予离散运动状态标签。
+        </p>
+        <p class="section-subtitle lang-en">
+          We focus on <strong>event‑frame multimodal fusion</strong> and
+          <strong>motion state awareness</strong>:
+          every sample includes time-synchronized, pixel‑aligned Event‑RGB data, per-frame boxes,
+          and per-object tracks with discrete motion state labels.
+        </p>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label lang-zh">同步样本对</div>
+            <div class="stat-label lang-en">Synchronized Pairs</div>
+            <div class="stat-value">70k+</div>
+            <div class="stat-note lang-zh">事件‑帧对齐样本（train + test）</div>
+            <div class="stat-note lang-en">aligned Event‑RGB pairs (train + test)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label lang-zh">检测框</div>
+            <div class="stat-label lang-en">Bounding Boxes</div>
+            <div class="stat-value">350k+</div>
+            <div class="stat-note lang-zh">逐帧标注检测框（像素级对齐）</div>
+            <div class="stat-note lang-en">per-frame aligned detection boxes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label lang-zh">目标轨迹</div>
+            <div class="stat-label lang-en">Object Tracks</div>
+            <div class="stat-value">50k+</div>
+            <div class="stat-note lang-zh">连续时序轨迹（带运动状态）</div>
+            <div class="stat-note lang-en">continuous tracks with motion states</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label lang-zh">分辨率 &amp; 动态范围</div>
+            <div class="stat-label lang-en">Resolution &amp; HDR</div>
+            <div class="stat-value">1280×720</div>
+            <div class="stat-note lang-zh">高分辨率事件流 &amp; 高动态范围场景</div>
+            <div class="stat-note lang-en">high-res events & high dynamic range scenes</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Dataset overview & camera system -->
+      <section id="dataset">
+        <div class="split-grid">
+          <div>
+            <div class="pill-divider"></div>
+            <h2 class="section-title">
+              <span class="lang-zh">数据集概览</span>
+              <span class="lang-en">Dataset <span>Overview</span></span>
+            </h2>
+            <p class="section-subtitle lang-zh">
+              EV‑MTD 通过统一的采集平台，在城市道路、高速路、隧道、交叉路口等场景中持续采集事件‑帧数据，
+              覆盖从弱光、高亮、逆光到复杂运动的多种工况。借鉴
+              PEOD 的场景多样性设计与 DSEC 的驾驶场景设定，我们进一步引入目标级运动状态标注，
+              为时空建模提供更细粒度监督。
+            </p>
+            <p class="section-subtitle lang-en">
+              EV‑MTD is collected on a unified platform across urban roads, highways, tunnels,
+              and intersections, covering low light, overexposure, backlight, and complex motions.
+              Inspired by the scene diversity of PEOD and the driving setup of DSEC, we additionally
+              provide per-object motion state labels for finer-grained supervision of spatiotemporal models.
+            </p>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="lang-zh">数据划分</span>
+                  <span class="lang-en">Data Split</span>
+                </div>
+                <div class="card-tag">Train / Val / Test</div>
+              </div>
+              <div class="card-body">
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Split</th>
+                        <th>Sequences</th>
+                        <th>Frames</th>
+                        <th>Boxes</th>
+                        <th>Tracks</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Train</td>
+                        <td>~80</td>
+                        <td>~50,000</td>
+                        <td>260k</td>
+                        <td>37k</td>
+                      </tr>
+                      <tr>
+                        <td>Val</td>
+                        <td>~20</td>
+                        <td>~10,000</td>
+                        <td>50k</td>
+                        <td>7k</td>
+                      </tr>
+                      <tr>
+                        <td>Test</td>
+                        <td>~25</td>
+                        <td>~12,000</td>
+                        <td>40k</td>
+                        <td>6k</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Total</strong></td>
+                        <td><strong>120+</strong></td>
+                        <td><strong>72k+</strong></td>
+                        <td><strong>350k+</strong></td>
+                        <td><strong>50k+</strong></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <ul class="list">
+                  <li class="lang-zh">多种光照条件：弱光、过曝、高动态范围、阴影与夜间。</li>
+                  <li class="lang-en">Diverse illumination: low light, overexposure, HDR, shadows, night.</li>
+                  <li class="lang-zh">多目标场景：车辆、行人、两轮车等常见交通参与者。</li>
+                  <li class="lang-en">Multi-object scenes: cars, persons, two-wheelers, etc.</li>
+                  <li class="lang-zh">每条轨迹配有离散运动状态标签，用于学习运动语义。</li>
+                  <li class="lang-en">Each track carries a discrete motion state label, enabling motion semantics.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="lang-zh">相机与对齐系统</span>
+                  <span class="lang-en">Camera & Alignment System</span>
+                </div>
+                <div class="card-tag">Pixel‑aligned Event‑Frame</div>
+              </div>
+              <div class="card-body">
+                <p class="lang-zh">
+                  借鉴
+                  <a href="https://echosliu.github.io/PEOD-dataset/" target="_blank" rel="noreferrer">PEOD</a>
+                  的共轴双相机系统与
+                  <a href="https://dsec.ifi.uzh.ch/" target="_blank" rel="noreferrer">DSEC</a>
+                  的精确标定流程，EV‑MTD 使用事件相机与 RGB 相机共视场配置，
+                  通过标定与时间同步实现：
+                </p>
+                <p class="lang-en">
+                  Following the coaxial dual-camera design of
+                  <a href="https://echosliu.github.io/PEOD-dataset/" target="_blank" rel="noreferrer">PEOD</a>
+                  and the accurate calibration of
+                  <a href="https://dsec.ifi.uzh.ch/" target="_blank" rel="noreferrer">DSEC</a>,
+                  EV‑MTD uses an event camera and an RGB camera with overlapping FoV and achieves:
+                </p>
+                <ul class="list">
+                  <li class="lang-zh">像素级空间对齐（经标定与立体校正）。</li>
+                  <li class="lang-en">Pixel-level spatial alignment via calibration and rectification.</li>
+                  <li class="lang-zh">微秒级时间同步（硬件触发 / 时间戳对齐）。</li>
+                  <li class="lang-en">Microsecond-level temporal synchronization.</li>
+                  <li class="lang-zh">统一的目标检测标注在 Event &amp; RGB 图像中的一致投影。</li>
+                  <li class="lang-en">Consistent projection of detection boxes on both Event & RGB views.</li>
+                </ul>
+                <p style="margin-top:6px;" class="lang-zh">
+                  这使得研究人员可以在<strong>完全对齐</strong>的事件‑帧视角下，
+                  分析不同运动模式下的跨模态表现，并设计鲁棒的融合模型。
+                </p>
+                <p style="margin-top:6px;" class="lang-en">
+                  This enables analysis of cross-modal behavior under different motion patterns
+                  on a <strong>fully aligned</strong> event‑frame view, and the design of robust
+                  fusion models.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Motion states & tasks -->
+      <section id="motion">
+        <div class="split-grid">
+          <div>
+            <div class="pill-divider"></div>
+            <h2 class="section-title">
+              <span class="lang-zh">目标级运动状态</span>
+              <span class="lang-en">Per‑Object <span>Motion States</span></span>
+            </h2>
+            <p class="section-subtitle lang-zh">
+              与多数仅提供几何标注的基准不同，EV‑MTD 为每条目标轨迹提供离散运动状态标签，将“运动语义”
+              引入事件‑帧检测与跟踪任务，有助于研究例如“机动目标”、“急刹车”、“缓加速”等关键行为。
+            </p>
+            <p class="section-subtitle lang-en">
+              Unlike benchmarks with purely geometric labels, EV‑MTD attaches discrete motion state
+              annotations to each track, introducing "motion semantics" into event‑frame detection
+              and tracking, and enabling research on critical behaviors such as maneuvering,
+              hard braking, and gentle acceleration.
+            </p>
+
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="lang-zh">状态定义</span>
+                  <span class="lang-en">State Definition</span>
+                </div>
+                <div class="card-tag">Per‑track Annotation</div>
+              </div>
+              <div class="card-body">
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>State</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Static</td>
+                        <td class="lang-zh">目标基本静止，相对运动接近 0。</td>
+                        <td class="lang-en">Object remains nearly static, negligible relative motion.</td>
+                      </tr>
+                      <tr>
+                        <td>Cruise</td>
+                        <td class="lang-zh">匀速运动，速度平稳。</td>
+                        <td class="lang-en">Constant velocity, smooth motion.</td>
+                      </tr>
+                      <tr>
+                        <td>Accel</td>
+                        <td class="lang-zh">加速状态，速度随时间显著增加。</td>
+                        <td class="lang-en">Acceleration, speed increases notably over time.</td>
+                      </tr>
+                      <tr>
+                        <td>Brake</td>
+                        <td class="lang-zh">减速 / 刹车状态，速度显著下降。</td>
+                        <td class="lang-en">Deceleration or braking, noticeable speed drop.</td>
+                      </tr>
+                      <tr>
+                        <td>Maneuver</td>
+                        <td class="lang-zh">机动状态，伴随明显转向或复杂轨迹变化。</td>
+                        <td class="lang-en">Maneuvering with significant steering or complex paths.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <ul class="list">
+                  <li class="lang-zh">状态标签在轨迹级别给出，并可投射到每一帧。</li>
+                  <li class="lang-en">States are defined per-track and can be propagated to each frame.</li>
+                  <li class="lang-zh">可用于多任务学习（检测 + 跟踪 + 状态分类）。</li>
+                  <li class="lang-en">Suitable for multi-task learning (detection + tracking + state classification).</li>
+                  <li class="lang-zh">适合研究事件数据在复杂运动下的优势场景。</li>
+                  <li class="lang-en">Helps explore where event data excels under complex motion.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div id="benchmark">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="lang-zh">基准任务</span>
+                  <span class="lang-en">Benchmark Tasks</span>
+                </div>
+                <div class="card-tag">Detection &amp; Tracking</div>
+              </div>
+              <div class="card-body">
+                <p class="lang-zh"><strong>EV‑MTD</strong> 提供以下基准任务与建议指标：</p>
+                <p class="lang-en"><strong>EV‑MTD</strong> provides the following benchmark tasks and metrics:</p>
+                <ul class="list">
+                  <li class="lang-zh">
+                    <strong>事件‑帧目标检测</strong>：在对齐的 Event / RGB 图像上预测检测框。
+                    指标：mAP、mAP@IoU=0.5:0.95。
+                  </li>
+                  <li class="lang-en">
+                    <strong>Event‑Frame Object Detection</strong> on aligned Event/RGB images.
+                    Metrics: mAP, mAP@IoU=0.5:0.95.
+                  </li>
+                  <li class="lang-zh">
+                    <strong>多目标跟踪（MOT）</strong>：基于事件‑帧输入输出时序轨迹。
+                    指标：HOTA、MOTA、IDF1 等。
+                  </li>
+                  <li class="lang-en">
+                    <strong>Multi‑Object Tracking (MOT)</strong> with event‑frame inputs.
+                    Metrics: HOTA, MOTA, IDF1, etc.
+                  </li>
+                  <li class="lang-zh">
+                    <strong>运动状态识别</strong>：为每条轨迹/每个时间步预测离散运动状态。
+                    指标：Accuracy、F1‑score。
+                  </li>
+                  <li class="lang-en">
+                    <strong>Motion State Recognition</strong> for each track/time step.
+                    Metrics: Accuracy, F1‑score.
+                  </li>
+                  <li class="lang-zh">
+                    <strong>联合任务</strong>：检测 + 跟踪 + 状态联合学习，探索多任务协同收益。
+                  </li>
+                  <li class="lang-en">
+                    <strong>Joint Tasks</strong>: detection + tracking + state classification in a unified model.
+                  </li>
+                </ul>
+                <p style="margin-top:6px;" class="lang-zh">
+                  我们鼓励研究者设计<strong>跨模态时空模型</strong>，
+                  深入利用事件流在高动态范围与快运动场景中的优势，
+                  类似于 PEOD 展示事件在极端条件下的鲁棒性。
+                </p>
+                <p style="margin-top:6px;" class="lang-en">
+                  We encourage researchers to design <strong>multimodal spatiotemporal models</strong>
+                  that exploit the advantages of event streams in HDR and fast motion scenarios,
+                  similar to how PEOD demonstrates robustness under extreme conditions.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Gallery / Examples -->
+      <section id="gallery">
+        <div class="pill-divider"></div>
+        <h2 class="section-title">
+          <span class="lang-zh">数据案例浏览</span>
+          <span class="lang-en">Gallery &amp; <span>Examples</span></span>
+        </h2>
+        <p class="section-subtitle lang-zh">
+          类似 PEOD 与 DSEC 的展示方式，我们提供若干代表性样例，展示在弱光、过曝和高速运动条件下，
+          事件数据与 RGB 图像的互补性，以及检测框与运动状态标注的效果。
+          （下方图片路径为占位，建议替换为你的真实动图或可视化 PNG）
+        </p>
+        <p class="section-subtitle lang-en">
+          Following the style of PEOD and DSEC, we showcase representative examples in low light,
+          overexposure, and high-speed motion conditions, highlighting the complementarity of events
+          and RGB frames, together with detection boxes and motion states. (The image paths below are
+          placeholders; please replace them with your own GIFs/PNGs.)
+        </p>
+
+        <div class="gallery-grid">
+          <!-- Example 1 -->
+          <div class="gallery-item">
+            <div class="gallery-img-wrapper">
+              <!-- TODO: 替换为真实可视化图，例如 assets/gallery_lowlight_events_rgb.png -->
+              <img src="assets/gallery_lowlight_placeholder.png" alt="Low-light event and RGB visualization" />
+            </div>
+            <div class="gallery-caption">
+              <div class="gallery-caption-title lang-zh">极弱光场景：RGB 严重欠曝</div>
+              <div class="gallery-caption-title lang-en">Extreme Low Light: Underexposed RGB</div>
+              <div class="lang-zh">
+                事件流仍清晰保留物体边缘与运动轨迹，检测框和轨迹在事件与帧视角保持对齐。
+              </div>
+              <div class="lang-en">
+                Events preserve sharp object boundaries and motions, while RGB is heavily underexposed.
+                Boxes and tracks remain aligned across modalities.
+              </div>
+            </div>
+          </div>
+
+          <!-- Example 2 -->
+          <div class="gallery-item">
+            <div class="gallery-img-wrapper">
+              <!-- TODO: 替换为真实可视化图，例如 assets/gallery_overexposure_placeholder.png -->
+              <img src="assets/gallery_overexposure_placeholder.png" alt="Overexposed HDR example" />
+            </div>
+            <div class="gallery-caption">
+              <div class="gallery-caption-title lang-zh">高动态范围 / 过曝场景</div>
+              <div class="gallery-caption-title lang-en">HDR / Overexposed Scene</div>
+              <div class="lang-zh">
+                在强光直射导致 RGB 饱和的条件下，事件流依旧提供可分辨的结构细节，方便鲁棒检测与跟踪。
+              </div>
+              <div class="lang-en">
+                Under strong direct sunlight causing RGB saturation, event streams still preserve structural details,
+                enabling robust detection and tracking.
+              </div>
+            </div>
+          </div>
+
+          <!-- Example 3 -->
+          <div class="gallery-item">
+            <div class="gallery-img-wrapper">
+              <!-- TODO: 替换为真实可视化图，例如 assets/gallery_motion_states_placeholder.png -->
+              <img src="assets/gallery_motion_states_placeholder.png" alt="Motion states example" />
+            </div>
+            <div class="gallery-caption">
+              <div class="gallery-caption-title lang-zh">多运动状态轨迹示例</div>
+              <div class="gallery-caption-title lang-en">Multi-state Track Example</div>
+              <div class="lang-zh">
+                同一轨迹随时间经历巡航、加速、减速与机动转弯，颜色或标记编码对应的运动状态标签。
+              </div>
+              <div class="lang-en">
+                A single track transitions through cruise, acceleration, braking, and maneuvering,
+                with colors or markers encoding different motion states.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Download & format -->
+      <section id="download">
+        <div class="pill-divider"></div>
+        <h2 class="section-title">
+          <span class="lang-zh">下载与数据格式</span>
+          <span class="lang-en">Download &amp; <span>Data Format</span></span>
+        </h2>
+        <p class="section-subtitle lang-zh">
+          EV‑MTD 提供原始事件流、同步 RGB 图像、检测标注、轨迹与运动状态标签，以及评测脚本与基线模型实现。
+          数据组织形式与 DSEC、PEOD 类似，便于快速上手。
+        </p>
+        <p class="section-subtitle lang-en">
+          EV‑MTD provides raw event streams, synchronized RGB images, detection annotations, tracks
+          with motion states, and evaluation scripts with baselines. The overall structure is
+          similar to DSEC and PEOD for easy adoption.
+        </p>
+
+        <div class="downloads-grid">
+          <div>
+            <div class="download-list">
+              <!-- TODO: 替换为真实下载链接 -->
+              <div class="download-item">
+                <div class="download-item-main">
+                  <div class="download-label lang-zh">完整数据集（Train + Val + Test）</div>
+                  <div class="download-label lang-en">Full Dataset (Train + Val + Test)</div>
+                  <div class="download-meta lang-zh">Baidu 网盘 / Google Drive · ~X TB</div>
+                  <div class="download-meta lang-en">Baidu Netdisk / Google Drive · ~X TB</div>
+                </div>
+                <div class="download-badge">
+                  <span class="lang-zh">下载</span>
+                  <span class="lang-en">Download</span>
+                </div>
+              </div>
+
+              <div class="download-item">
+                <div class="download-item-main">
+                  <div class="download-label lang-zh">标注与运动状态</div>
+                  <div class="download-label lang-en">Annotations &amp; Motion States</div>
+                  <div class="download-meta lang-zh">NumPy / JSON / HDF5 · 检测、轨迹、状态</div>
+                  <div class="download-meta lang-en">NumPy / JSON / HDF5 · detection, tracks, states</div>
+                </div>
+                <div class="download-badge">
+                  <span class="lang-zh">下载</span>
+                  <span class="lang-en">Download</span>
+                </div>
+              </div>
+
+              <div class="download-item">
+                <div class="download-item-main">
+                  <div class="download-label lang-zh">评测脚本与基线代码</div>
+                  <div class="download-label lang-en">Evaluation Scripts &amp; Baselines</div>
+                  <div class="download-meta lang-zh">GitHub 仓库 · 指标计算与示例代码</div>
+                  <div class="download-meta lang-en">GitHub repo · metrics & starter code</div>
+                </div>
+                <a class="download-badge" href="https://github.com/your-name/ev-mtd" target="_blank" rel="noreferrer">
+                  GitHub
+                </a>
+              </div>
+            </div>
+
+            <p style="font-size:12px;color:var(--text-soft);margin-top:8px;" class="lang-zh">
+              数据集以 Creative Commons / MIT 等友好许可证（根据你实际选择）发布，用于学术研究与非商业用途。
+            </p>
+            <p style="font-size:12px;color:var(--text-soft);margin-top:8px;" class="lang-en">
+              The dataset is released under a friendly license such as Creative Commons / MIT
+              (depending on your final choice), for academic and non-commercial use.
+            </p>
+          </div>
+
+          <div>
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="lang-zh">目录结构示例</span>
+                  <span class="lang-en">Directory Structure</span>
+                </div>
+                <div class="card-tag">Example Layout</div>
+              </div>
+              <div class="card-body">
+                <div class="code-block">
+<pre>ev_mtd/
+  sequences/
+    seq_0001/
+      events/         # raw event data (RAW / DAT / NPZ)
+      frames/         # synchronized RGB images (PNG / JPG)
+      calib/          # calibration & alignment parameters
+    ...
+  annotations/
+    det_train.json    # detection labels
+    det_val.json
+    det_test.json
+    tracks_train.json # tracks + motion states
+    ...
+  tools/
+    eval_detection.py
+    eval_tracking.py
+    eval_motion_state.py
+</pre>
+                </div>
+                <p style="margin-top:6px;" class="lang-zh">
+                  我们提供 Python 读取示例与可直接提交的评测脚本，方便复现与对比实验。
+                </p>
+                <p style="margin-top:6px;" class="lang-en">
+                  We provide Python loaders and ready-to-use evaluation scripts for easy reproduction
+                  and fair comparison.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Citation -->
+      <section id="citation">
+        <div class="pill-divider"></div>
+        <h2 class="section-title">
+          <span class="lang-zh">引用</span>
+          <span class="lang-en">Citation</span>
+        </h2>
+        <p class="section-subtitle lang-zh">
+          如果本数据集对你的研究有所帮助，欢迎在论文中引用 EV‑MTD 并标注项目主页链接。
+          以下是示例 BibTeX（请根据你的真实论文信息进行修改）。
+        </p>
+        <p class="section-subtitle lang-en">
+          If you find EV‑MTD useful, please consider citing it and referencing this project page.
+          The BibTeX below is a placeholder; adapt it to your actual paper information.
+        </p>
+
+        <div class="card citation-card">
+          <div class="card-header">
+            <div class="card-title">BibTeX</div>
+            <div class="card-tag">Example</div>
+          </div>
+          <div class="card-body">
+            <div class="code-block">
+<pre>@article{yourname2026evmtd,
+  title   = {EV-MTD: A Motion-aware Event-Frame Benchmark
+             for Object Detection and Tracking},
+  author  = {Your Name and Coauthor, Another and ...},
+  journal = {arXiv preprint arXiv:xxxx.xxxxx},
+  year    = {2026}
+}</pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <div>
+          © 2026 EV‑MTD Dataset. All rights reserved.
+        </div>
+        <div class="footer-links">
+          <span class="badge-soft">
+            <span class="lang-zh">维护者：Your Name · your.email@example.com</span>
+            <span class="lang-en">Maintainer: Your Name · your.email@example.com</span>
+          </span>
+          <!-- TODO: 替换为真实论文 / PDF 链接 -->
+          <a class="badge-soft" href="https://arxiv.org/abs/xxxx.xxxxx" target="_blank" rel="noreferrer">
+            <span class="lang-zh">论文 / PDF</span>
+            <span class="lang-en">Paper / PDF</span>
+          </a>
+          <a class="badge-soft" href="https://github.com/your-name/ev-mtd" target="_blank" rel="noreferrer">
+            GitHub
+          </a>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const root = document.documentElement;
+      const buttons = document.querySelectorAll("[data-lang-switch]");
+
+      function setLang(lang) {
+        root.setAttribute("data-lang", lang);
+        if (lang === "zh") {
+          root.setAttribute("lang", "zh");
+        } else {
+          root.setAttribute("lang", "en");
+        }
+        buttons.forEach(btn => {
+          btn.classList.toggle("active", btn.getAttribute("data-lang-switch") === lang);
+        });
+      }
+
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const lang = btn.getAttribute("data-lang-switch");
+          setLang(lang);
+        });
+      });
+
+      // 默认中文
+      setLang("zh");
+    })();
+  </script>
+</body>
+</html>
