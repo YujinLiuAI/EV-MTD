@@ -16,7 +16,7 @@
 
   <style>
     :root{
-      /* Palette: lighter, between #eaafc8 and #654ea3 */
+      /* 主题配色：介于 #eaafc8 与 #654ea3 的淡紫色系 */
       --c1: #eaafc8;
       --c2: #654ea3;
       --c3: #b89adf;
@@ -40,10 +40,12 @@
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
 
+    /* 全局重置：消除默认边距，统一盒模型 */
     *{ box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     html { scroll-behavior: smooth; }
 
+    /* 页面主体：启用纵向 scroll-snap，一屏一个大板块的滚动体验 */
     body{
       font-family: var(--font);
       background: var(--bg);
@@ -52,12 +54,14 @@
       -webkit-font-smoothing: antialiased;
       overflow-y: auto;
       scroll-snap-type: y mandatory;
+      /* 给固定导航预留空间，避免内容被遮住 */
+      padding-top: 88px;
     }
 
     a{ color: var(--c2); text-decoration: none; }
     a:hover{ text-decoration: underline; }
 
-    /* Dynamic background layer */
+    /* 背景层：固定的淡紫渐变 + 漂浮光斑动效 */
     .bg{
       position: fixed;
       inset: 0;
@@ -108,7 +112,7 @@
       100% { transform: translate(2vw, 2vh) scale(1); }
     }
 
-    /* Layout helpers */
+    /* 页面主容器：限制内容宽度并左右留白 */
     .container{
       width: 100%;
       max-width: 1120px;
@@ -116,17 +120,20 @@
       padding: 0 22px;
     }
 
-    /* Sticky header */
+    /* 顶部导航栏：固定在页面顶部，带磨砂和阴影效果 */
     .header{
-      position: sticky;
+      position: fixed;
       top: 0;
+      left: 0;
+      right: 0;
       z-index: 50;
-      background: rgba(255,255,255,.72);
+      background: rgba(255,255,255,.88);
       backdrop-filter: blur(14px);
-      border-bottom: 1px solid rgba(101,78,163,.14);
+      border-bottom: 1px solid rgba(101,78,163,.16);
+      box-shadow: 0 10px 30px rgba(31,12,64,.08);
     }
     .header-inner{
-      height: 72px;
+      height: 88px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -150,21 +157,26 @@
       font-weight: 800;
       letter-spacing: .12em;
       text-transform: uppercase;
-      font-size: 15px;
+      font-size: 16px;
     }
+    /* 副标题（英文可两行显示，如 EVENT-FRAME MOTION / BENCHMARK） */
     .brand-sub{
       color: var(--ink-3);
       font-size: 12px;
-      letter-spacing: .16em;
+      letter-spacing: .14em;
       text-transform: uppercase;
-      margin-top: -2px;
+      margin-top: 2px;
+      line-height: 1.35;
+      max-width: 11em;           /* 控制换行位置，两行时更整齐 */
+      white-space: normal;
     }
 
+    /* 顶部导航菜单样式 */
     .nav{
       display: flex;
       align-items: center;
-      gap: 16px;
-      font-size: 13px;
+      gap: 20px;
+      font-size: 14px;
       color: var(--ink-2);
       flex-wrap: wrap;
       justify-content: flex-end;
@@ -175,6 +187,7 @@
       position: relative;
       white-space: nowrap;
     }
+    /* 顶部导航下划线 Hover 效果（CTA 按钮会单独关闭该效果） */
     .nav a::after{
       content:"";
       position: absolute;
@@ -186,20 +199,36 @@
       background: linear-gradient(90deg, var(--c1), var(--c2));
       transition: width .18s ease-out;
     }
-    .nav a:hover::after{ width: 100%; }
+    .nav a:hover::after{ width: 150%; }
 
+    /* 顶部紫色 CTA “获取数据集” 按钮
+       说明：这里控制按钮大小，看起来偏小可以在此调节 padding / min-height / font-size */
+
+    /* 英文 “Get Dataset” 允许两行时也保持对齐 */
     .cta{
-      padding: 7px 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 28px;
+      min-height: 40px;
+      min-width: 120px;
       border-radius: var(--radius-pill);
       border: 1px solid rgba(101,78,163,.22);
-      background: linear-gradient(135deg, rgba(234,175,200,.30), rgba(101,78,163,.12));
+      background: linear-gradient(135deg, rgba(234,175,200,.30), rgba(101,78,163,.22));
       color: var(--ink);
-      box-shadow: 0 10px 26px rgba(101,78,163,.10);
-      font-weight: 600;
+      box-shadow: 0 12px 32px rgba(101,78,163,.14);
+      font-weight: 700;
+      font-size: 14px;
+      white-space: normal;       /* 允许 “Get Dataset” 换行为两行 */
+      text-align: center;
+      line-height: 1.3;
     }
 
+    /* 语言切换 ZH/EN：防止被挤压裁切，保证 “EN” 完整显示 */
     .lang{
       display: inline-flex;
+      flex-shrink: 0;           /* 导航栏 flex 布局下不缩小，避免右侧被挤掉 */
       border-radius: var(--radius-pill);
       overflow: hidden;
       border: 1px solid rgba(101,78,163,.18);
@@ -209,11 +238,11 @@
     .lang button{
       border: 0;
       background: transparent;
-      padding: 6px 9px;
+      padding: 6px 12px;        /* 左右留足空间，避免 “EN” 被裁 */
       cursor: pointer;
-      font-size: 11px;
+      font-size: 12px;
       color: var(--ink-2);
-      min-width: 34px;
+      min-width: 40px;           /* 单钮最小宽度，保证两字母不被截断 */
     }
     .lang button.active{
       background: linear-gradient(135deg, var(--c1), var(--c2));
